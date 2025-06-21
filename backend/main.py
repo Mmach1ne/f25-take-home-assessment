@@ -28,7 +28,7 @@ class WeatherResponse(BaseModel):
 @app.post("/weather", response_model=WeatherResponse)
 async def create_weather_request(request: WeatherRequest):
 
-    W_ID = str(uuid.uuid4())
+    weather_id = str(uuid.uuid4())
     W_API = "0bfd9b2ffc4866026f7381c4396ab17e"
     #Api Call 
     try:
@@ -38,28 +38,42 @@ async def create_weather_request(request: WeatherRequest):
             "query" : request.location
         }
 
-    response = request.get(W_URL, params = parameters, timeout=5)
-    response.raise_for_status()
+        response = request.get(W_URL, params = parameters, timeout=5)
+        response.raise_for_status()
 
-    weather_data = response.json()
+        weather_data = response.json()
 
-    if "error" in weather_data:
-        raise HTTPException(
-            status_code=400
-            detail=f"Weather API Error:{weather_data["error"].get("info", "Unknown Weatherstack error")}"
-        )
-    
-    data = {
-        "id": weather_data,
-        "date": request.data,
-        "location": request.location,
-        "notes": request.notes,
-        "submitted_at": datetime.utc.now().isoformat(),
-        "weather": {
-            "location": weather_data.get("location",{}),
-            "current": weather_data.get("current", {}),
+        if "error" in weather_data:
+            raise HTTPException(
+                status_code=400
+                detail=f"Weather API Error:{weather_data["error"].get("info", "Unknown Weatherstack error")}"
+            )
+        
+        data = {
+            "id": weather_data,
+            "date": request.data,
+            "location": request.location,
+            "notes": request.notes,
+            "submitted_at": datetime.utc.now().isoformat(),
+            "weather": {
+                "location": weather_data.get("location",{}),
+                "current": weather_data.get("current", {}),
+            }
         }
-    }
+        weather_storage[weather_id] = data
+
+        return WeatherResponse(id=weather_id)
+
+    except request.exception.RequestException as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Failed to fetch weather data: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
 
     """
     You need to implement this endpoint to handle the following:

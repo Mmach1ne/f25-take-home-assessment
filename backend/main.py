@@ -2,7 +2,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
+from datetime import datetime, timezone
 import uvicorn
+
+
+#Could add a seperate if clause for historical data instead of current data. (requires paid api access)
 
 app = FastAPI(title="Weather Data System", version="1.0.0")
 
@@ -45,7 +49,7 @@ async def create_weather_request(request: WeatherRequest):
 
         if "error" in weather_data:
             raise HTTPException(
-                status_code=400
+                status_code=400,
                 detail=f"Weather API Error:{weather_data["error"].get("info", "Unknown Weatherstack error")}"
             )
         
@@ -82,7 +86,6 @@ async def create_weather_request(request: WeatherRequest):
     3. Stores combined data with unique ID in memory
     4. Returns the ID to frontend
     """
-    pass
 
 @app.get("/weather/{weather_id}")
 async def get_weather_data(weather_id: str):

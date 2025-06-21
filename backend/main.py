@@ -27,6 +27,29 @@ class WeatherResponse(BaseModel):
 
 @app.post("/weather", response_model=WeatherResponse)
 async def create_weather_request(request: WeatherRequest):
+
+    W_ID = str(uuid.uuid4())
+    W_API = "0bfd9b2ffc4866026f7381c4396ab17e"
+    #Api Call 
+    try:
+        W_URL= "http://api.weatherstack.com/"
+        parameters = {
+            "access_key":W_API
+            "query" : request.location
+        }
+
+    response = request.get(W_URL, params = parameters, timeout=5)
+    response.raise_for_status()
+
+    weather_data = response.json()
+
+    if "error" in weather_data:
+        raise HTTPException(
+            status_code=400
+            detail=f"Weather API Error:{weather_data["error"].get("info", "Unknown Weatherstack error")}"
+        )
+    
+    
     """
     You need to implement this endpoint to handle the following:
     1. Receive form data (date, location, notes)

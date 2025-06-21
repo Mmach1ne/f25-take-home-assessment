@@ -34,7 +34,7 @@ async def create_weather_request(request: WeatherRequest):
     try:
         W_URL= "http://api.weatherstack.com/"
         parameters = {
-            "access_key":W_API
+            "access_key":W_API,
             "query" : request.location
         }
 
@@ -49,7 +49,18 @@ async def create_weather_request(request: WeatherRequest):
             detail=f"Weather API Error:{weather_data["error"].get("info", "Unknown Weatherstack error")}"
         )
     
-    
+    data = {
+        "id": weather_data,
+        "date": request.data,
+        "location": request.location,
+        "notes": request.notes,
+        "submitted_at": datetime.utc.now().isoformat(),
+        "weather": {
+            "location": weather_data.get("location",{}),
+            "current": weather_data.get("current", {}),
+        }
+    }
+
     """
     You need to implement this endpoint to handle the following:
     1. Receive form data (date, location, notes)

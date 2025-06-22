@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 from datetime import datetime, timezone
+import uuid
+import requests
 import uvicorn
 
 
@@ -36,13 +38,13 @@ async def create_weather_request(request: WeatherRequest):
     W_API = "0bfd9b2ffc4866026f7381c4396ab17e"
     #Api Call 
     try:
-        W_URL= "http://api.weatherstack.com/"
+        W_URL= "http://api.weatherstack.com/current"
         parameters = {
             "access_key":W_API,
             "query" : request.location
         }
 
-        response = request.get(W_URL, params = parameters, timeout=5)
+        response = requests.get(W_URL, params = parameters, timeout=5)
         response.raise_for_status()
 
         weather_data = response.json()
@@ -50,15 +52,15 @@ async def create_weather_request(request: WeatherRequest):
         if "error" in weather_data:
             raise HTTPException(
                 status_code=400,
-                detail=f"Weather API Error:{weather_data["error"].get("info", "Unknown Weatherstack error")}"
+                detail=f"Weather API Error:{weather_data['error'].get('info', 'Unknown Weatherstack error')}"
             )
         
         data = {
             "id": weather_data,
-            "date": request.data,
+            "date": request.date,
             "location": request.location,
             "notes": request.notes,
-            "submitted_at": datetime.utc.now().isoformat(),
+            "submitted_at": datetime.now(timezone.utc).isoformat(),
             "weather": {
                 "location": weather_data.get("location",{}),
                 "current": weather_data.get("current", {}),
@@ -68,7 +70,7 @@ async def create_weather_request(request: WeatherRequest):
 
         return WeatherResponse(id=weather_id)
 
-    except request.exception.RequestException as e:
+    except requests.exceptions.RequestException as e:
         raise HTTPException(
             status_code=503,
             detail=f"Failed to fetch weather data: {str(e)}"
